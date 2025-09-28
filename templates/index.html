@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tems Call Flow Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-network-wired me-2"></i>
+                Tems Call Flow Analyzer
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Sol Panel - Kontroller -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-upload me-2"></i>Log Dosyası Yükle</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <input type="file" class="form-control" id="logFile" accept=".log,.txt,.trp">
+                        </div>
+                        <button class="btn btn-primary w-100" id="uploadBtn">
+                            <i class="fas fa-upload me-2"></i>Yükle ve Analiz Et
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtreler -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-filter me-2"></i>Filtreler</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="protocolFilter" class="form-label">Protokol</label>
+                            <select class="form-select" id="protocolFilter">
+                                <option value="">Tümü</option>
+                                <option value="ERRC">ERRC</option>
+                                <option value="LTE_RRC">LTE RRC</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="channelFilter" class="form-label">Kanal</label>
+                            <select class="form-select" id="channelFilter">
+                                <option value="">Tümü</option>
+                                <option value="DcchUl">UL-DCCH</option>
+                                <option value="DcchDl">DL-DCCH</option>
+                                <option value="Pcch">PCCH</option>
+                                <option value="BcchSch">BCCH-DL-SCH</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="messageTypeFilter" class="form-label">Mesaj Türü</label>
+                            <select class="form-select" id="messageTypeFilter">
+                                <option value="">Tümü</option>
+                                <option value="measurementReport">Measurement Report</option>
+                                <option value="rrcConnectionReconfiguration">RRC Connection Reconfiguration</option>
+                                <option value="rrcConnectionReconfigurationComplete">RRC Connection Reconfiguration Complete</option>
+                                <option value="paging">Paging</option>
+                                <option value="rrcConnectionRelease">RRC Connection Release</option>
+                                <option value="systemInformationBlockType1">SIB1</option>
+                                <option value="systemInformation">System Information</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="messageDirectionFilter" class="form-label">Mesaj Yönü</label>
+                            <select class="form-select" id="messageDirectionFilter">
+                                <option value="">Tümü</option>
+                                <option value="ue_to_enb">UE → eNB</option>
+                                <option value="enb_to_ue">eNB → UE</option>
+                                <option value="enb_to_mme">eNB → MME</option>
+                                <option value="mme_to_enb">MME → eNB</option>
+                                <option value="ue_to_mme">UE → MME (NAS)</option>
+                                <option value="mme_to_ue">MME → UE (NAS)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="messageIdentityFilter" class="form-label">Mesaj Kimliği</label>
+                            <input type="text" class="form-control" id="messageIdentityFilter" placeholder="Mesaj kimliği ara">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="pciFilter" class="form-label">PCI</label>
+                            <input type="number" class="form-control" id="pciFilter" placeholder="PCI değeri">
+                        </div>
+                        
+                        <div class="mb-3">
+                             <label for="earfcnFilter" class="form-label">EARFCN</label>
+                             <input type="number" class="form-control" id="earfcnFilter" placeholder="EARFCN değeri">
+                         </div>
+                         
+                         <div class="mb-3">
+                             <label class="form-label">RSRP Aralığı (dBm)</label>
+                             <div class="row">
+                                 <div class="col-6">
+                                     <input type="number" class="form-control" id="minRsrpFilter" placeholder="Min RSRP">
+                                 </div>
+                                 <div class="col-6">
+                                     <input type="number" class="form-control" id="maxRsrpFilter" placeholder="Max RSRP">
+                                 </div>
+                             </div>
+                         </div>
+                         
+                         <div class="mb-3">
+                             <label for="rrcTransactionFilter" class="form-label">RRC Transaction ID</label>
+                             <input type="number" class="form-control" id="rrcTransactionFilter" placeholder="Transaction ID">
+                         </div>
+                         
+                         <div class="mb-3">
+                             <div class="form-check">
+                                 <input class="form-check-input" type="checkbox" id="pagingOnlyFilter">
+                                 <label class="form-check-label" for="pagingOnlyFilter">
+                                     Sadece Paging Mesajları
+                                 </label>
+                             </div>
+                         </div>
+                         
+                         <div class="mb-3">
+                             <div class="form-check">
+                                 <input class="form-check-input" type="checkbox" id="measurementOnlyFilter">
+                                 <label class="form-check-label" for="measurementOnlyFilter">
+                                     Sadece Measurement Mesajları
+                                 </label>
+                             </div>
+                         </div>
+                         
+                         <div class="mb-3">
+                             <div class="form-check">
+                                 <input class="form-check-input" type="checkbox" id="connectionOnlyFilter">
+                                 <label class="form-check-label" for="connectionOnlyFilter">
+                                     Sadece Connection Mesajları
+                                 </label>
+                             </div>
+                         </div>
+                         
+                         <button class="btn btn-secondary w-100" id="applyFilters">
+                            <i class="fas fa-search me-2"></i>Filtreleri Uygula
+                        </button>
+                        <button class="btn btn-outline-secondary w-100 mt-2" id="clearFilters">
+                            <i class="fas fa-times me-2"></i>Filtreleri Temizle
+                        </button>
+                    </div>
+                </div>
+
+                <!-- İstatistikler -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-bar me-2"></i>İstatistikler</h5>
+                    </div>
+                    <div class="card-body" id="statisticsPanel">
+                        <p class="text-muted">Log dosyası yüklendiğinde istatistikler burada görünecek.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ana Panel -->
+            <div class="col-md-9">
+                <!-- Tabs -->
+                <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="flow-tab" data-bs-toggle="tab" data-bs-target="#flow" type="button" role="tab">
+                            <i class="fas fa-project-diagram me-2"></i>Call Flow Diagramı
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button" role="tab">
+                            <i class="fas fa-list me-2"></i>Mesaj Listesi
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="protocol-tab" data-bs-toggle="tab" data-bs-target="#protocol" type="button" role="tab">
+                            <i class="fas fa-layer-group me-2"></i>Protokol Katmanları
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="sequence-tab" data-bs-toggle="tab" data-bs-target="#sequence" type="button" role="tab">
+                            <i class="fas fa-sort-numeric-down me-2"></i>Mesaj Sıralaması
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="simulation-tab" data-bs-toggle="tab" data-bs-target="#simulation" type="button" role="tab">
+                            <i class="fas fa-play-circle me-2"></i>Call Flow Simülasyonu
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="mainTabContent">
+                    <!-- Call Flow Diagramı -->
+                    <div class="tab-pane fade show active" id="flow" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Call Flow Diagramı</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" id="zoomIn">
+                                        <i class="fas fa-search-plus"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" id="zoomOut">
+                                        <i class="fas fa-search-minus"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" id="resetZoom">
+                                        <i class="fas fa-expand-arrows-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="flowDiagram" class="flow-diagram">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="fas fa-upload fa-3x mb-3"></i>
+                                        <h5>Log dosyası yükleyin</h5>
+                                        <p>Call flow diagramını görmek için bir Tems log dosyası yükleyin.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mesaj Listesi -->
+                    <div class="tab-pane fade" id="messages" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Mesaj Listesi</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" id="exportMessages">
+                                        <i class="fas fa-download me-1"></i>Dışa Aktar
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover" id="messagesTable">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Zaman</th>
+                                                <th>Protokol</th>
+                                                <th>Kanal</th>
+                                                <th>Mesaj Türü</th>
+                                                <th>PCI</th>
+                                                <th>EARFCN</th>
+                                                <th>RSRP</th>
+                                                <th>Detay</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted py-4">
+                                                    Log dosyası yüklendiğinde mesajlar burada görünecek.
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Protokol Katmanları -->
+                    <div class="tab-pane fade" id="protocol" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-layer-group me-2"></i>Protokol Katmanları Analizi</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="card border-primary">
+                                            <div class="card-header bg-primary text-white">
+                                                <h6 class="mb-0"><i class="fas fa-wifi me-2"></i>RRC (Radio Resource Control)</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="rrcMessages" class="protocol-messages">
+                                                    <p class="text-muted">RRC mesajları burada görünecek</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card border-success">
+                                            <div class="card-header bg-success text-white">
+                                                <h6 class="mb-0"><i class="fas fa-network-wired me-2"></i>S1-AP (S1 Application Protocol)</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="s1apMessages" class="protocol-messages">
+                                                    <p class="text-muted">S1-AP mesajları burada görünecek</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card border-warning">
+                                            <div class="card-header bg-warning text-dark">
+                                                <h6 class="mb-0"><i class="fas fa-shield-alt me-2"></i>NAS (Non-Access Stratum)</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="nasMessages" class="protocol-messages">
+                                                    <p class="text-muted">NAS mesajları burada görünecek</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Protokol Dağılımı</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <canvas id="protocolChart" width="400" height="200"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Call Flow Simülasyonu -->
+                    <div class="tab-pane fade" id="simulation" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-play-circle me-2"></i>İnteraktif Call Flow Simülasyonu</h5>
+                                <div class="simulation-controls">
+                                    <button class="btn btn-sm btn-success" id="playSimulation">
+                                        <i class="fas fa-play"></i> Play
+                                    </button>
+                                    <button class="btn btn-sm btn-warning" id="pauseSimulation" style="display: none;">
+                                        <i class="fas fa-pause"></i> Pause
+                                    </button>
+                                    <button class="btn btn-sm btn-info" id="resumeSimulation" style="display: none;">
+                                        <i class="fas fa-play"></i> Resume
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" id="stepSimulation">
+                                        <i class="fas fa-step-forward"></i> Step
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" id="resetSimulation">
+                                        <i class="fas fa-undo"></i> Reset
+                                    </button>
+                                    <div class="d-inline-block ms-3">
+                                        <label class="form-label me-2">Hız:</label>
+                                        <select id="simulationSpeed" class="form-select form-select-sm d-inline-block" style="width: 150px;">
+                                            <option value="0.1">0.1x (Çok Yavaş)</option>
+                                            <option value="0.25">0.25x (Yavaş)</option>
+                                            <option value="0.5" selected>0.5x (Normal)</option>
+                                            <option value="1">1x (Hızlı)</option>
+                                            <option value="1.5">1.5x (Çok Hızlı)</option>
+                                            <option value="2">2x (En Hızlı)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- Protocol Stack Visualization -->
+                                <div class="protocol-stack mb-4">
+                                    <h6 class="text-muted mb-3">LTE Protokol Stack Görselleştirmesi</h6>
+                                    <div class="stack-container">
+                                        <!-- UE Column -->
+                                        <div class="stack-column">
+                                            <div class="column-header">
+                                                <i class="fas fa-mobile-alt"></i>
+                                                <h6>UE (User Equipment)</h6>
+                                            </div>
+                                            <div class="layer-stack">
+                                                <div class="layer nas ue" data-layer="nas" data-entity="ue">
+                                                    <span class="layer-name">NAS</span>
+                                                    <small>Non-Access Stratum</small>
+                                                </div>
+                                                <div class="layer rrc ue" data-layer="rrc" data-entity="ue">
+                                                    <span class="layer-name">RRC</span>
+                                                    <small>Radio Resource Control</small>
+                                                </div>
+                                                <div class="layer pdcp ue" data-layer="pdcp" data-entity="ue">
+                                                    <span class="layer-name">PDCP</span>
+                                                    <small>Packet Data Convergence</small>
+                                                </div>
+                                                <div class="layer rlc ue" data-layer="rlc" data-entity="ue">
+                                                    <span class="layer-name">RLC</span>
+                                                    <small>Radio Link Control</small>
+                                                </div>
+                                                <div class="layer mac ue" data-layer="mac" data-entity="ue">
+                                                    <span class="layer-name">MAC</span>
+                                                    <small>Medium Access Control</small>
+                                                </div>
+                                                <div class="layer phy ue" data-layer="phy" data-entity="ue">
+                                                    <span class="layer-name">PHY</span>
+                                                    <small>Physical Layer</small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Air Interface -->
+                                        <div class="air-interface">
+                                            <div class="air-waves">
+                                                <i class="fas fa-wifi"></i>
+                                                <span>Uu Interface</span>
+                                                <div class="wave-animation"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- eNB Column -->
+                                        <div class="stack-column">
+                                            <div class="column-header">
+                                                <i class="fas fa-broadcast-tower"></i>
+                                                <h6>eNB (Base Station)</h6>
+                                            </div>
+                                            <div class="layer-stack">
+                                                <div class="layer rrc enb" data-layer="rrc" data-entity="enb">
+                                                    <span class="layer-name">RRC</span>
+                                                    <small>Radio Resource Control</small>
+                                                </div>
+                                                <div class="layer pdcp enb" data-layer="pdcp" data-entity="enb">
+                                                    <span class="layer-name">PDCP</span>
+                                                    <small>Packet Data Convergence</small>
+                                                </div>
+                                                <div class="layer rlc enb" data-layer="rlc" data-entity="enb">
+                                                    <span class="layer-name">RLC</span>
+                                                    <small>Radio Link Control</small>
+                                                </div>
+                                                <div class="layer mac enb" data-layer="mac" data-entity="enb">
+                                                    <span class="layer-name">MAC</span>
+                                                    <small>Medium Access Control</small>
+                                                </div>
+                                                <div class="layer phy enb" data-layer="phy" data-entity="enb">
+                                                    <span class="layer-name">PHY</span>
+                                                    <small>Physical Layer</small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- S1 Interface -->
+                                        <div class="s1-interface">
+                                            <div class="interface-line">
+                                                <i class="fas fa-exchange-alt"></i>
+                                                <span>S1 Interface</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- MME Column -->
+                                        <div class="stack-column">
+                                            <div class="column-header">
+                                                <i class="fas fa-server"></i>
+                                                <h6>MME (Core Network)</h6>
+                                            </div>
+                                            <div class="layer-stack">
+                                                <div class="layer nas mme" data-layer="nas" data-entity="mme">
+                                                    <span class="layer-name">NAS</span>
+                                                    <small>Non-Access Stratum</small>
+                                                </div>
+                                                <div class="layer s1ap mme" data-layer="s1ap" data-entity="mme">
+                                                    <span class="layer-name">S1-AP</span>
+                                                    <small>S1 Application Protocol</small>
+                                                </div>
+                                                <div class="layer sctp mme" data-layer="sctp" data-entity="mme">
+                                                    <span class="layer-name">SCTP</span>
+                                                    <small>Stream Control Protocol</small>
+                                                </div>
+                                                <div class="layer ip mme" data-layer="ip" data-entity="mme">
+                                                    <span class="layer-name">IP</span>
+                                                    <small>Internet Protocol</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Mesaj Seçimi -->
+                                <div class="message-selection mb-4">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Başlangıç Mesajı Seç:</label>
+                                            <div class="d-flex gap-2">
+                                                <select class="form-select" id="startMessageSelect">
+                                                    <option value="">Mesaj seçin...</option>
+                                                </select>
+                                                <button class="btn btn-outline-primary" id="nextEnbMmeBtn" title="eNB-MME mesajlarını sırayla göster">
+                                                    <i class="fas fa-exchange-alt"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label">Simülasyon Durumu:</label>
+                                            <div class="simulation-status">
+                                                <span class="badge bg-secondary" id="simulationStatus">Hazır</span>
+                                                <span class="ms-2">Mesaj: <span id="currentMessageIndex">0</span>/<span id="totalMessages">0</span></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Simülasyon Alanı -->
+                <div class="simulation-area">
+                    <div id="simulationCanvas" class="simulation-canvas">
+                        <!-- Network entities -->
+                        <div class="network-entity ue-entity">
+                            <div class="entity-icon">📱</div>
+                            <div class="entity-label">UE</div>
+                        </div>
+                        <div class="network-entity enb-entity">
+                            <div class="entity-icon">🗼</div>
+                            <div class="entity-label">eNB</div>
+                        </div>
+                        <div class="network-entity mme-entity">
+                            <div class="entity-icon">🏢</div>
+                            <div class="entity-label">MME</div>
+                        </div>
+                        
+
+                        <div class="text-center text-muted py-5">
+                         </div>
+                    </div>
+                </div>
+
+                                <!-- Mesaj Detayları -->
+                                <div class="current-message-details mt-4" id="currentMessageDetails" style="display: none;">
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white">
+                                            <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Aktif Mesaj Detayları</h6>
+                                        </div>
+                                        <div class="card-body" id="currentMessageContent">
+                                            <!-- Aktif mesaj detayları buraya gelecek -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mesaj Sıralaması -->
+                    <div class="tab-pane fade" id="sequence" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-sort-numeric-down me-2"></i>Mesaj Sıralaması ve Analizi</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" id="sortByTime">
+                                        <i class="fas fa-clock me-1"></i>Zamana Göre
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" id="sortByProtocol">
+                                        <i class="fas fa-layer-group me-1"></i>Protokole Göre
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" id="sortByDirection">
+                                        <i class="fas fa-exchange-alt me-1"></i>Yöne Göre
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="sequence-list" id="sequenceList">
+                                            <div class="text-center text-muted py-5">
+                                                <i class="fas fa-list-ol fa-3x mb-3"></i>
+                                                <p>Log dosyası yüklendiğinde mesaj sıralaması burada görünecek.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card border-info">
+                                            <div class="card-header bg-info text-white">
+                                                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Layer 3 İstatistikleri</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="stat-item mb-3">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span><i class="fas fa-wifi text-primary me-2"></i>RRC Mesajları:</span>
+                                                        <span class="badge bg-primary" id="rrcCount">0</span>
+                                                    </div>
+                                                </div>
+                                                <div class="stat-item mb-3">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span><i class="fas fa-network-wired text-success me-2"></i>S1-AP Mesajları:</span>
+                                                        <span class="badge bg-success" id="s1apCount">0</span>
+                                                    </div>
+                                                </div>
+                                                <div class="stat-item mb-3">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span><i class="fas fa-shield-alt text-warning me-2"></i>NAS Mesajları:</span>
+                                                        <span class="badge bg-warning" id="nasCount">0</span>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <div class="stat-item mb-2">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span><i class="fas fa-arrow-up text-info me-2"></i>Uplink:</span>
+                                                        <span class="badge bg-info" id="uplinkCount">0</span>
+                                                    </div>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span><i class="fas fa-arrow-down text-secondary me-2"></i>Downlink:</span>
+                                                        <span class="badge bg-secondary" id="downlinkCount">0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mesaj Detay Modal -->
+    <div class="modal fade" id="messageDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mesaj Detayları</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="messageDetailContent">
+                    <!-- Mesaj detayları buraya yüklenecek -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Yükleniyor...</span>
+        </div>
+        <div class="mt-2">İşleniyor...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
